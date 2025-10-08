@@ -1,0 +1,148 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>LunaSleep - Sleep Tracker</title>
+  <meta name="description" content="Track bedtime, wake logs, and sleep quality with visual summaries and persistence">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+  <link rel="stylesheet" href="styles/main.css">
+  <style type="text/tailwindcss" data-teda="tailwind-apply">
+    @layer components {
+      .btn-primary { @apply bg-indigo-600 text-white px-4 py-2 rounded-md shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-300; }
+      .btn-ghost { @apply bg-white border border-gray-200 px-3 py-1.5 rounded-md text-sm text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-100; }
+      .card { @apply bg-white rounded-xl shadow-sm p-4; }
+      .chip { @apply inline-flex items-center gap-2 bg-indigo-50 text-indigo-700 rounded-full px-3 py-1 text-sm; }
+    }
+  </style>
+</head>
+<body class="bg-slate-50 min-h-screen text-slate-800 antialiased">
+  <header class="max-w-6xl mx-auto px-4 py-8 flex items-center justify-between">
+    <div class="flex items-center gap-4">
+      <div class="w-12 h-12 rounded-lg bg-gradient-to-br from-indigo-600 to-teal-400 flex items-center justify-center shadow-md">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z" fill="white"></path>
+        </svg>
+      </div>
+      <div>
+        <h1 class="text-2xl font-semibold">LunaSleep</h1>
+        <p class="text-sm text-slate-500">Smart sleep tracker with gentle insights and persistent logs</p>
+      </div>
+    </div>
+    <nav class="flex items-center gap-3">
+      <button id="exportBtn" class="btn-ghost" aria-label="Export logs">Export</button>
+      <label for="importFile" class="btn-ghost cursor-pointer" tabindex="0" role="button" aria-label="Import logs">Import</label>
+      <input id="importFile" type="file" accept="application/json" class="sr-only" />
+    </nav>
+  </header>
+
+  <main class="max-w-6xl mx-auto px-4 pb-12">
+    <section class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <!-- Form Card -->
+      <aside class="card lg:col-span-1">
+        <h2 class="text-lg font-medium">Add Sleep Log</h2>
+        <p class="text-sm text-slate-500 mt-1">Capture bedtime, wake time, and how you felt.</p>
+
+        <form id="logForm" class="mt-4 space-y-3" aria-label="Sleep log form">
+          <div>
+            <label class="text-sm font-medium block mb-1" for="logDate">Date</label>
+            <input id="logDate" name="date" type="date" class="w-full rounded-md border-gray-200 px-3 py-2 focus:ring-2 focus:ring-indigo-100" aria-required="true" />
+          </div>
+
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="text-sm font-medium block mb-1" for="bedtime">Bedtime</label>
+              <input id="bedtime" name="bedtime" type="time" class="w-full rounded-md border-gray-200 px-3 py-2 focus:ring-2 focus:ring-indigo-100" required aria-required="true" />
+            </div>
+            <div>
+              <label class="text-sm font-medium block mb-1" for="waketime">Wake time</label>
+              <input id="waketime" name="waketime" type="time" class="w-full rounded-md border-gray-200 px-3 py-2 focus:ring-2 focus:ring-indigo-100" required aria-required="true" />
+            </div>
+          </div>
+
+          <div>
+            <label class="text-sm font-medium block mb-1">Sleep quality</label>
+            <div id="qualityPicker" class="flex gap-2" role="radiogroup" aria-label="Sleep quality">
+              <button type="button" class="quality-btn p-2 rounded-md bg-slate-100" data-value="1" aria-pressed="false">1</button>
+              <button type="button" class="quality-btn p-2 rounded-md bg-slate-100" data-value="2" aria-pressed="false">2</button>
+              <button type="button" class="quality-btn p-2 rounded-md bg-slate-100" data-value="3" aria-pressed="false">3</button>
+              <button type="button" class="quality-btn p-2 rounded-md bg-slate-100" data-value="4" aria-pressed="false">4</button>
+              <button type="button" class="quality-btn p-2 rounded-md bg-slate-100" data-value="5" aria-pressed="false">5</button>
+            </div>
+            <input type="hidden" id="quality" name="quality" value="3" />
+          </div>
+
+          <div>
+            <label class="text-sm font-medium block mb-1" for="notes">Notes</label>
+            <textarea id="notes" name="notes" rows="3" class="w-full rounded-md border-gray-200 px-3 py-2 focus:ring-2 focus:ring-indigo-100" placeholder="How did you sleep? Any dreams or interruptions?" ></textarea>
+          </div>
+
+          <div class="flex items-center gap-3">
+            <button id="saveBtn" type="submit" class="btn-primary">Add Log</button>
+            <button id="quickNowBtn" type="button" class="btn-ghost">Quick: Now as Wake</button>
+            <button id="clearFormBtn" type="button" class="btn-ghost">Reset</button>
+          </div>
+        </form>
+
+        <div class="mt-4 text-xs text-slate-500">Tip: If wake time is earlier than bedtime we assume you woke the next day. Times use your local timezone.</div>
+      </aside>
+
+      <!-- Main dashboard -->
+      <section class="lg:col-span-2 space-y-6">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div class="card">
+            <div class="flex items-start justify-between">
+              <div>
+                <p class="text-sm text-slate-500">Average Sleep</p>
+                <p id="avgSleep" class="text-xl font-semibold">-- h -- m</p>
+              </div>
+              <div class="chip" title="Average quality">⭐ <span id="avgQuality" class="ml-1">--</span></div>
+            </div>
+          </div>
+
+          <div class="card">
+            <p class="text-sm text-slate-500">Current Streak</p>
+            <p id="streak" class="text-xl font-semibold">0 nights</p>
+            <p class="text-xs text-slate-400 mt-1">Nights logged in consecutive days</p>
+          </div>
+
+          <div class="card">
+            <p class="text-sm text-slate-500">Longest Sleep</p>
+            <p id="longest" class="text-xl font-semibold">-- h -- m</p>
+            <p id="longestDate" class="text-xs text-slate-400 mt-1">—</p>
+          </div>
+        </div>
+
+        <div class="card">
+          <h3 class="text-md font-medium">Last 14 Days</h3>
+          <div id="chart" class="mt-4 flex gap-2 items-end h-44" aria-hidden="false"></div>
+          <div class="mt-3 text-xs text-slate-500">Bars show nightly sleep duration. Hover or tap bars to see exact values.</div>
+        </div>
+
+        <div class="card">
+          <div class="flex items-center justify-between">
+            <h3 class="text-md font-medium">Sleep Logs</h3>
+            <div class="text-sm text-slate-500">Total: <span id="totalLogs">0</span></div>
+          </div>
+
+          <ul id="logList" class="mt-3 divide-y divide-slate-100" aria-live="polite"></ul>
+
+          <div class="mt-4 flex items-center justify-end gap-2">
+            <button id="clearAllBtn" class="btn-ghost">Clear All</button>
+            <button id="importSampleBtn" class="btn-ghost">Load Sample Data</button>
+          </div>
+        </div>
+      </section>
+    </section>
+  </main>
+
+  <footer class="max-w-6xl mx-auto px-4 py-6 text-xs text-slate-500">
+    Built with care by <a href="https://teda.dev" class="text-indigo-600 hover:underline">Teda.dev</a>. Data is stored only in your browser unless you export it.
+  </footer>
+
+  <script src="scripts/helpers.js"></script>
+  <script src="scripts/ui.js"></script>
+  <script src="scripts/main.js"></script>
+</body>
+</html>

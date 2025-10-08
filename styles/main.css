@@ -1,0 +1,40 @@
+/* styles/main.css
+   Custom CSS for LunaSleep. Keep this file for non Tailwind customizations.
+*/
+
+:root{
+  --accent-500: #6366f1; /* indigo-500 */
+  --muted: #6b7280; /* slate-500 */
+}
+
+html,body{height:100%;}
+
+/* Improve focus visibility for keyboard users */
+:focus{outline: none;}
+button:focus, a:focus, input:focus, textarea:focus{box-shadow: 0 0 0 4px rgba(99,102,241,0.12); border-radius: 8px}
+
+/* Card subtle border for elevated look */
+.card{border:1px solid rgba(15,23,42,0.03)}
+
+/* Quality button states */
+.quality-btn{min-width:40px; text-align:center; transition:transform .12s ease, background-color .12s ease}
+.quality-btn[aria-pressed="true"]{background-color:rgba(99,102,241,0.12); box-shadow:0 4px 10px rgba(99,102,241,0.08); transform:translateY(-2px)}
+
+/* Log item styling */
+.log-item{display:flex; align-items:center; justify-content:space-between; gap:12px; padding:12px 0}
+.log-meta{display:flex; gap:12px; align-items:center}
+.log-duration{font-weight:600}
+
+/* Chart bar hover */
+.chart-bar{background:linear-gradient(180deg, rgba(99,102,241,0.9), rgba(56,189,248,0.9)); border-radius:6px; width:28px; display:flex; align-items:end; justify-content:center; transition:transform .12s ease}
+.chart-bar:hover{transform:translateY(-6px)}
+
+/* Responsive tweaks */
+@media (max-width: 768px){
+  .chart-bar{width:18px}
+}
+
+/* Respect prefers-reduced-motion */
+@media (prefers-reduced-motion: reduce){
+  *{transition:none !important}
+}
